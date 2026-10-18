@@ -1,56 +1,108 @@
-# Welcome to your Expo app 👋
+# ThatBit
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+ThatBit is a collaboration workspace for computer science students to keep project information, documentation, and accountability in one place.
 
-## Get started
+## App Preview
 
-1. Install dependencies
+<!-- Add your screenshot to assets/images/thatbit-preview.png, then remove this comment. -->
 
-   ```bash
-   npm install
-   ```
+![ThatBit app preview](./assets/images/thatbit-preview.png)
 
-2. Start the app
+## What This Project Is
 
-   ```bash
-   npx expo start
-   ```
+Project work often gets scattered across messages, meetings, calendars, repositories, and personal notes. ThatBit is designed as one calm place where a team can bring that context together and preserve the story of how a project was built.
 
-In the output, you'll find options to open the app in a
+## Current Experience
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The current prototype includes:
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- A minimal, dark interface that works across Expo-supported platforms, including the web.
+- Sign-in and sign-up screens with responsive form layouts.
+- Navigation between the sign-in and sign-up experiences.
+- Clear in-app feedback that authentication is not connected yet.
 
-## Get a fresh project
+## Architecture
 
-When you're ready, run:
+ThatBit is an Expo application built with React Native, TypeScript, and Expo Router.
+
+- `src/app/` contains file-based routes.
+- `src/components/` contains shared interface components.
+- `src/hooks/` contains reusable platform and theme hooks.
+- `src/constants/` contains shared theme values.
+- `assets/` contains icons and images used by the app.
+
+The project is configured to run on the web, iOS, and Android. The current verified user flow is the authentication interface; no backend data flow is connected.
+
+## Product / Design Decisions
+
+- The interface is intentionally minimal and web-style. **[stated by builder]**
+- The product is intended to help computer science students organize projects, maintain documentation, and support accountability. **[stated by builder]**
+- The long-term product direction is to bring project information together and leave it in one place as the project’s story. **[stated by builder]**
+
+## Known Limitations
+
+- Sign-in and account creation are interface-only; Supabase authentication is not connected.
+- Photos, Gmail, Calendar, Meet, and GitHub appear as visual examples only. They are not live integrations.
+- Ollama is an intended integration but has not been implemented in the current repository.
+- The core collaboration workspace and project-documentation workflow are not implemented yet.
+- Handling unusually large amounts of user data remains an open product and architecture concern.
+- No automated tests currently exist.
+
+## Credits
+
+- Built with [Expo](https://expo.dev/), [React Native](https://reactnative.dev/), and [Expo Router](https://docs.expo.dev/router/introduction/).
+- The repository includes `@supabase/supabase-js`, but Supabase is not connected in the current app flow.
+- Intended local AI integration: [Ollama](https://ollama.com/) (not started).
+- Starter assets originate from the Expo project template. Replace or attribute any additional third-party assets before submission.
+
+## Roadmap
+
+- Connect account creation and sign-in to a real authentication backend.
+- Build the main project workspace and documentation flow.
+- Add project activity and accountability features.
+- Design safe limits and storage behavior for large projects.
+- Connect Ollama for a clearly defined AI-assisted workflow.
+- Evaluate and implement external tool integrations individually.
+
+## Development History
+
+### 2026-10-18 08:39 — Authentication MVP design
+
+What changed: Added the sign-in and sign-up screens, navigation between them, a dark visual system, and a reflected row of service icons.
+
+Why: The builder wanted a relevant visual design for the MVP and liked the river-like reflection effect. **[stated by builder]**
+
+Notes worth remembering: The builder identified a glossier finish as future polish. The commit mentions Supabase as the intended destination for form data, but the current implementation does not connect or save to Supabase.
+
+### 2026-10-18 08:42 — Authentication interface verified
+
+What changed: Documented the existing sign-in and sign-up prototype, its navigation, and the current integration boundaries.
+
+Why: Create an honest, presentation-ready project record without presenting planned integrations as complete.
+
+Notes worth remembering: Authentication and all displayed external services remain unconnected.
+
+## Running the Project
+
+Requirements:
+
+- Node.js and npm
+
+From the `ThatBit.AI` directory:
 
 ```bash
-npm run reset-project
+npm install
+npm run web
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Other available development commands:
 
-### Other setup steps
+```bash
+npm start        # Open the Expo development server
+npm run ios      # Open the iOS target
+npm run android  # Open the Android target
+npm run lint     # Run Expo linting
+npx tsc --noEmit # Run the TypeScript type check
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+No environment variables are currently used by the implemented app flow.
