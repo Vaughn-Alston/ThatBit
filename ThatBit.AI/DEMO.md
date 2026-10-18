@@ -20,9 +20,10 @@ Student projects quickly become scattered across repositories, meetings, calenda
 2. Show the sign-in screen and explain that authentication is intentionally bypassed for this local prototype.
 3. Select **Continue in demo mode**; no credentials are required and no request is made to Supabase.
 4. Point out the central **Start / Design doc** node and explain that the map is empty until the user adds context.
-5. Select **Add a branch**, enter a Markdown heading, a short first-paragraph description, and optional checklist items, then choose **Parse & add to map**.
-6. Show how the document and its tasks appear as connected nodes in an irregular branch. Select a node to see its name, description, creation date, and source Markdown; select a task and mark it complete.
-7. Explain that the map represents the shared context intended for an AI assistant, but the nodes are local-only and no LLM is connected.
+5. Select **Tasks** to view phases and tasks parsed from `docs/docs/design-doc.md`. Mark a task complete, then reload the document to reset its imported task state.
+6. Return to **Project map**, select **Add a branch**, enter a Markdown heading, short first-paragraph description, and optional checklist items, then choose **Parse & add to map**.
+7. Select a node to see its name, description, creation date, and source Markdown. Attach a PDF by dropping it into the detail modal on web or using the device picker, then open/share it.
+8. Explain that the map represents the shared context intended for an AI assistant, but the nodes are local-only and no LLM is connected.
 
 ## Demo risks and fallbacks
 
@@ -33,6 +34,7 @@ Student projects quickly become scattered across repositories, meetings, calenda
 | A judge expects authentication to create an account | The demo-mode path skips auth | State clearly that this bypass is only for testing; no account is created |
 | The graph is mistaken for a live AI integration | AI and persistence are not connected | Explain that the map demonstrates the intended context structure only |
 | A judge expects Markdown file upload | The composer accepts pasted or typed Markdown | Explain that file import is a future addition |
+| Local PDF reference expires or cannot be opened | Browser/device file access | Keep one small non-sensitive sample PDF ready and skip this step if the picker fails |
 
 ## What is real vs. simulated
 
@@ -42,7 +44,9 @@ Student projects quickly become scattered across repositories, meetings, calenda
 | Navigation between authentication screens | Real, local Expo Router navigation |
 | Demo-mode authentication bypass | Real local navigation; no auth request or account |
 | Markdown-to-node parsing | Real local parsing of headings and checklist items |
+| Design-document task section | Real local parsing of phase headings and task bullets |
 | Node details and creation date | Real local UI; metadata is not persisted |
+| PDF attachments | Real local picker and node list; files are not uploaded and local references may not survive reload |
 | Node graph and task completion | Real local UI; state is not persisted |
 | Supabase authentication | Not started |
 | Photos, Gmail, Calendar, Meet, and GitHub | Decorative product-direction examples; not connected |
@@ -77,12 +81,13 @@ Persist project maps, connect authentication, define the AI workflow, and then a
 
 ## If we had more time
 
-- Build the project workspace and documentation workflow.
+- Add Markdown file import and durable storage to the existing project workspace.
 - Add accountability and project activity features.
 - Connect real authentication.
 - Define and implement an Ollama-assisted workflow.
 - Add storage limits and graceful handling for large projects.
 - Evaluate external tool integrations based on the core workflow.
+- Split the Expo frontend and a real backend into separate top-level packages after the demo freeze.
 
 ## Devpost-style writeup draft
 

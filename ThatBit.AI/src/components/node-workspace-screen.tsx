@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import * as Sharing from 'expo-sharing';
+import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -12,7 +14,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PdfAttachmentInput } from '@/components/pdf-attachment-input';
+import { TaskSection } from '@/components/task-section';
+import type { Project } from '@/types/project';
 import { parseMarkdownDocument } from '@/utils/markdown-document';
+import type { NodeAttachment, PickedPdf } from '@/utils/node-attachment';
+import { parseProject } from '@/utils/project-parser';
+import { readMarkdownAsset } from '@/utils/read-markdown-asset';
+import designDocumentAsset from '../../docs/docs/design-doc.md';
 
 type NodeKind = 'start' | 'document' | 'task';
 
@@ -27,6 +36,7 @@ type GraphNode = {
   x: number;
   y: number;
   completed?: boolean;
+  attachments: NodeAttachment[];
 };
 
 const ROOT_NODE: GraphNode = {
@@ -39,7 +49,14 @@ const ROOT_NODE: GraphNode = {
   parentId: null,
   x: 0.5,
   y: 260,
+  attachments: [],
 };
+
+function formatFileSize(size?: number) {
+  if (size === undefined) return 'PDF';
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function nodeSize(kind: NodeKind) {
   if (kind === 'start') return 124;
@@ -86,11 +103,17 @@ function findPosition(
 export function NodeWorkspaceScreen() {
   const [canvasWidth, setCanvasWidth] = useState(300);
   const [nodes, setNodes] = useState<GraphNode[]>([ROOT_NODE]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState(ROOT_NODE.id);
+  const [activeSection, setActiveSection] = useState<'map' | 'tasks'>('map');
   const [isComposerVisible, setComposerVisible] = useState(false);
   const [isDetailVisible, setDetailVisible] = useState(false);
   const [markdown, setMarkdown] = useState('');
   const [composerError, setComposerError] = useState('');
+  const [attachmentError, setAttachmentError] = useState('');
+  const [isLoadingDesignDocument, setLoadingDesignDocument] = useState(true);
+  const [designDocumentError, setDesignDocumentError] = useState('');
+  const [designDocumentReloadKey, setDesignDocumentReloadKey] = useState(0);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? ROOT_NODE;
   const canvasHeight = Math.max(580, 440 + nodes.length * 128);
   const markdownPreview = useMemo(() => parseMarkdownDocument(markdown), [markdown]);
@@ -99,6 +122,42 @@ export function NodeWorkspaceScreen() {
     const parent = nodes.find((candidate) => candidate.id === node.parentId);
     return parent ? [{ node, parent }] : [];
   });
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadDesignDocument() {
+      setLoadingDesignDocument(true);
+      setDesignDocumentError('');
+      try {
+        const markdownText = await readMarkdownAsset(designDocumentAsset);
+        const title = markdownText.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+        const project = parseProject(markdownText, {
+          id: 'design-document',
+          name: title ?? 'Design Document',
+        });
+
+        if (project.phases.length === 0) {
+          throw new Error('No phases found. Add headings that start with “Phase ” to the design document.');
+        }
+
+        if (isCurrent) setProjects([project]);
+      } catch (error) {
+        if (isCurrent) {
+          setDesignDocumentError(
+            error instanceof Error ? error.message : 'Could not load the design document.'
+          );
+        }
+      } finally {
+        if (isCurrent) setLoadingDesignDocument(false);
+      }
+    }
+
+    void loadDesignDocument();
+    return () => {
+      isCurrent = false;
+    };
+  }, [designDocumentReloadKey]);
 
   function addMarkdownBranch() {
     if (!markdown.trim()) {
@@ -122,6 +181,7 @@ export function NodeWorkspaceScreen() {
       kind: 'document',
       parentId: parent.id,
       ...findPosition(parent, nextNodes, canvasWidth, layoutHeight, 'document'),
+      attachments: [],
     };
     nextNodes.push(documentNode);
 
@@ -136,6 +196,7 @@ export function NodeWorkspaceScreen() {
         parentId: documentId,
         ...findPosition(documentNode, nextNodes, canvasWidth, layoutHeight, 'task'),
         completed: task.completed,
+        attachments: [],
       };
       nextNodes.push(taskNode);
     });
@@ -151,6 +212,86 @@ export function NodeWorkspaceScreen() {
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
         node.id === taskId ? { ...node, completed: !node.completed } : node
+      )
+    );
+  }
+
+  function attachPdfs(pdfs: PickedPdf[]) {
+    setAttachmentError('');
+    const timestamp = Date.now();
+    const attachments = pdfs.map((pdf, index): NodeAttachment => ({
+      ...pdf,
+      id: `${timestamp}-${index}`,
+    }));
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === selectedNodeId
+          ? { ...node, attachments: [...node.attachments, ...attachments] }
+          : node
+      )
+    );
+  }
+
+  async function openAttachment(attachment: NodeAttachment) {
+    setAttachmentError('');
+    try {
+      if (Platform.OS === 'web') {
+        await Linking.openURL(attachment.uri);
+        return;
+      }
+
+      if (!(await Sharing.isAvailableAsync())) {
+        setAttachmentError('PDF sharing is not available on this device.');
+        return;
+      }
+
+      await Sharing.shareAsync(attachment.uri, {
+        mimeType: attachment.mimeType,
+        dialogTitle: attachment.name,
+      });
+    } catch (error) {
+      setAttachmentError(
+        error instanceof Error ? `Could not open PDF: ${error.message}` : 'Could not open PDF.'
+      );
+    }
+  }
+
+  function removeAttachment(attachmentId: string) {
+    const attachment = selectedNode.attachments.find(({ id }) => id === attachmentId);
+    if (Platform.OS === 'web' && attachment?.uri.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.uri);
+    }
+
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === selectedNodeId
+          ? { ...node, attachments: node.attachments.filter(({ id }) => id !== attachmentId) }
+          : node
+      )
+    );
+    setAttachmentError('');
+  }
+
+  function toggleProjectTask(projectId: string, phaseId: string, taskId: string) {
+    setProjects((currentProjects) =>
+      currentProjects.map((project) =>
+        project.id !== projectId
+          ? project
+          : {
+              ...project,
+              phases: project.phases.map((phase) =>
+                phase.id !== phaseId
+                  ? phase
+                  : {
+                      ...phase,
+                      tasks: phase.tasks.map((task) =>
+                        task.id === taskId
+                          ? { ...task, status: task.status === 'done' ? 'todo' : 'done' }
+                          : task
+                      ),
+                    }
+              ),
+            }
       )
     );
   }
@@ -182,6 +323,37 @@ export function NodeWorkspaceScreen() {
           </Text>
         </View>
 
+        <View style={styles.sectionTabs}>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeSection === 'map' }}
+            onPress={() => setActiveSection('map')}
+            style={[styles.sectionTab, activeSection === 'map' && styles.sectionTabSelected]}>
+            <Text style={[styles.sectionTabLabel, activeSection === 'map' && styles.sectionTabLabelSelected]}>
+              Project map
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeSection === 'tasks' }}
+            onPress={() => setActiveSection('tasks')}
+            style={[styles.sectionTab, activeSection === 'tasks' && styles.sectionTabSelected]}>
+            <Text style={[styles.sectionTabLabel, activeSection === 'tasks' && styles.sectionTabLabelSelected]}>
+              Tasks
+            </Text>
+          </Pressable>
+        </View>
+
+        {activeSection === 'tasks' ? (
+          <TaskSection
+            error={designDocumentError}
+            isLoading={isLoadingDesignDocument}
+            onReload={() => setDesignDocumentReloadKey((key) => key + 1)}
+            onToggleTask={toggleProjectTask}
+            projects={projects}
+          />
+        ) : (
+          <>
         <View style={styles.mapToolbar}>
           <View>
             <Text style={styles.mapLabel}>PROJECT MAP</Text>
@@ -315,6 +487,8 @@ export function NodeWorkspaceScreen() {
           )}
         </View>
         <Text style={styles.localNote}>This map is saved only in this session. No services are connected.</Text>
+          </>
+        )}
       </View>
 
       <Modal
@@ -418,6 +592,50 @@ export function NodeWorkspaceScreen() {
               ) : null}
               <Text style={styles.detailMetaLabel}>CREATION SOURCE</Text>
               <Text selectable style={styles.detailSource}>{selectedNode.source}</Text>
+              <View style={styles.attachmentSection}>
+                <View style={styles.attachmentHeader}>
+                  <Text style={styles.detailMetaLabel}>PDF ATTACHMENTS</Text>
+                  <PdfAttachmentInput
+                    onError={setAttachmentError}
+                    onFiles={attachPdfs}
+                  />
+                </View>
+                {selectedNode.attachments.length === 0 ? (
+                  <Text style={styles.noAttachments}>No PDFs attached yet.</Text>
+                ) : (
+                  selectedNode.attachments.map((attachment) => (
+                    <View key={attachment.id} style={styles.attachmentRow}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open or share ${attachment.name}`}
+                        onPress={() => openAttachment(attachment)}
+                        style={({ pressed }) => [styles.attachmentInfo, pressed && styles.nodePressed]}>
+                        <View style={styles.pdfBadge}>
+                          <Text style={styles.pdfBadgeLabel}>PDF</Text>
+                        </View>
+                        <View style={styles.attachmentText}>
+                          <Text numberOfLines={1} style={styles.attachmentName}>{attachment.name}</Text>
+                          <Text style={styles.attachmentSize}>{formatFileSize(attachment.size)}</Text>
+                        </View>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${attachment.name}`}
+                        onPress={() => removeAttachment(attachment.id)}
+                        style={styles.removeAttachmentButton}>
+                        <Text style={styles.removeAttachmentLabel}>Remove</Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+                <Text style={styles.attachmentNote}>
+                  Drop PDFs here on web, or choose them from your device. Attachments are temporary and may
+                  need to be added again after reload.
+                </Text>
+                {attachmentError ? (
+                  <Text accessibilityRole="alert" style={styles.errorText}>{attachmentError}</Text>
+                ) : null}
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -518,6 +736,34 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 7,
     maxWidth: 520,
+  },
+  sectionTabs: {
+    flexDirection: 'row',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#1c2125',
+    borderRadius: 13,
+    backgroundColor: '#090b0d',
+    padding: 4,
+    marginBottom: 10,
+  },
+  sectionTab: {
+    flex: 1,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  sectionTabSelected: {
+    backgroundColor: '#1a2025',
+  },
+  sectionTabLabel: {
+    color: '#727a82',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  sectionTabLabelSelected: {
+    color: '#d9e0e5',
   },
   mapToolbar: {
     minHeight: 52,
@@ -801,6 +1047,79 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
     marginTop: 8,
+  },
+  attachmentSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#22262a',
+    marginTop: 18,
+    paddingTop: 14,
+  },
+  attachmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  noAttachments: {
+    color: '#777f87',
+    fontSize: 11,
+    paddingVertical: 10,
+  },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#252a2f',
+    borderRadius: 12,
+    padding: 9,
+    marginBottom: 7,
+  },
+  attachmentInfo: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pdfBadge: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: '#241718',
+  },
+  pdfBadgeLabel: {
+    color: '#e69e99',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  attachmentText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  attachmentName: {
+    color: '#d6d9dc',
+    fontSize: 11,
+  },
+  attachmentSize: {
+    color: '#777f87',
+    fontSize: 9,
+    marginTop: 3,
+  },
+  removeAttachmentButton: {
+    padding: 6,
+  },
+  removeAttachmentLabel: {
+    color: '#b98782',
+    fontSize: 9,
+  },
+  attachmentNote: {
+    color: '#626a72',
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 5,
   },
   modalSheet: {
     width: '100%',

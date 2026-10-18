@@ -2,12 +2,6 @@
 
 ThatBit is a collaboration workspace for computer science students to keep project information, documentation, and accountability in one place.
 
-## App Preview
-
-<!-- Add your screenshot to assets/images/thatbit-preview.png, then remove this comment. -->
-
-![ThatBit app preview](./assets/images/thatbit-preview.png)
-
 ## What This Project Is
 
 Project work often gets scattered across messages, meetings, calendars, repositories, and personal notes. ThatBit is designed as one calm place where a team can bring that context together and preserve the story of how a project was built.
@@ -22,17 +16,17 @@ The current prototype includes:
 - A project context map rooted at a Start design-document node.
 - Markdown documents that create irregular document branches and connected checklist tasks.
 - Node detail modals with a name, short description, creation date, and the Markdown source used to create the node.
+- PDF attachments on nodes, with web drag-and-drop, native file picking, and platform open/share actions.
+- A separate Tasks section that reads phases and tasks from `docs/docs/design-doc.md`.
 - Local task completion and node selection for exploring the graph.
 
 ## Architecture
 
 ThatBit is an Expo application built with React Native, TypeScript, and Expo Router.
 
-- `src/app/` contains file-based routes.
-- `src/components/` contains shared interface components.
-- `src/hooks/` contains reusable platform and theme hooks.
-- `src/constants/` contains shared theme values.
-- `assets/` contains icons and images used by the app.
+- **Frontend (implemented):** `src/app/` contains file-based routes; `src/components/` contains interface components; `src/hooks/`, `src/constants/`, `src/types/`, and `src/utils/` contain supporting client code; `assets/` contains bundled images and icons.
+- **Backend (not implemented):** there is no server, database migration, authentication client, or API route in the current repository. `Supabase/.env.local` is an ignored local configuration file, not a connected backend.
+- **Agent boundary:** frontend work belongs in `src/` and `assets/`. Backend work should be introduced in a separate top-level `backend/` directory after the hackathon demo, with its own setup and environment documentation. Do not place server code in `src/app/`, because Expo Router treats files there as screens.
 - [MVP-DESIGN.md](./MVP-DESIGN.md) records the node data model and detail-view behavior.
 
 The project is configured to run on the web, iOS, and Android. The demo workspace keeps its nodes in memory for the current session; no backend or AI service is connected.
@@ -48,12 +42,15 @@ The project is configured to run on the web, iOS, and Android. The demo workspac
 - Sign-in and account creation are interface-only; use **Continue in demo mode** to reach the workspace without Supabase.
 - Workspace nodes and task completion are local to the current session and are lost when the app reloads.
 - Node creation dates and Markdown source are shown in the detail view but are not persisted beyond the current session.
+- PDF attachment references are local and temporary; file contents are not uploaded or durably stored.
+- Parsed design-document tasks and completion status are local to the current session.
 - Markdown is entered or pasted into the in-app editor; importing a `.md` file is not implemented.
 - The map illustrates the intended shared AI context; no LLM is connected yet.
 - Photos, Gmail, Calendar, Meet, and GitHub appear as visual examples only. They are not live integrations.
 - Ollama is an intended integration but has not been implemented in the current repository.
 - Handling unusually large amounts of user data remains an open product and architecture concern.
 - No automated tests currently exist.
+- The frontend and future backend have not yet been moved into separate top-level directories. That structural change is deferred until after the submission to avoid changing the working Expo entry point during the final demo window.
 
 ## Credits
 
@@ -70,6 +67,7 @@ The project is configured to run on the web, iOS, and Android. The demo workspac
 - Design safe limits and storage behavior for large projects.
 - Connect Ollama for a clearly defined AI-assisted workflow.
 - Evaluate and implement external tool integrations individually.
+- After the hackathon, move the Expo application into a dedicated `frontend/` directory and create a separate `backend/` package when a backend is actually implemented.
 
 ## Development History
 
@@ -88,6 +86,14 @@ What changed: Documented the existing sign-in and sign-up prototype, its navigat
 Why: Create an honest, presentation-ready project record without presenting planned integrations as complete.
 
 Notes worth remembering: Authentication and all displayed external services remain unconnected.
+
+### 2026-10-18 10:29 — Demo truth and ownership boundaries refreshed
+
+What changed: Documented the implemented frontend, the absent backend, agent ownership boundaries, current prototype capabilities, and post-hackathon folder split.
+
+Why: The builder asked for a copy-ready README and a clear frontend/backend separation so coding agents can stay on their assigned side. **[stated by builder]**
+
+Notes worth remembering: A physical folder move was deferred because the project entered its final 90-minute demo freeze and the existing Expo root has uncommitted work.
 
 ## Running the Project
 
@@ -112,4 +118,4 @@ npm run lint     # Run Expo linting
 npx tsc --noEmit # Run the TypeScript type check
 ```
 
-No environment variables are currently used by the implemented app flow.
+No environment variables are currently used by the implemented app flow. An ignored `Supabase/.env.local` currently contains the names `PUBLIC_SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`, but the application does not read them.
