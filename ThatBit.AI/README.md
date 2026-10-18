@@ -18,8 +18,10 @@ The current prototype includes:
 
 - A minimal, dark interface that works across Expo-supported platforms, including the web.
 - Sign-in and sign-up screens with responsive form layouts.
-- Navigation between the sign-in and sign-up experiences.
-- Clear in-app feedback that authentication is not connected yet.
+- A clearly labeled demo-mode bypass for testing without an account or Supabase.
+- A project context map rooted at a Start design-document node.
+- Markdown documents that create irregular document branches and connected checklist tasks.
+- Local task completion and node selection for exploring the graph.
 
 ## Architecture
 
@@ -31,7 +33,7 @@ ThatBit is an Expo application built with React Native, TypeScript, and Expo Rou
 - `src/constants/` contains shared theme values.
 - `assets/` contains icons and images used by the app.
 
-The project is configured to run on the web, iOS, and Android. The current verified user flow is the authentication interface; no backend data flow is connected.
+The project is configured to run on the web, iOS, and Android. The demo workspace keeps its nodes in memory for the current session; no backend or AI service is connected.
 
 ## Product / Design Decisions
 
@@ -41,10 +43,12 @@ The project is configured to run on the web, iOS, and Android. The current verif
 
 ## Known Limitations
 
-- Sign-in and account creation are interface-only; Supabase authentication is not connected.
+- Sign-in and account creation are interface-only; use **Continue in demo mode** to reach the workspace without Supabase.
+- Workspace nodes and task completion are local to the current session and are lost when the app reloads.
+- Markdown is entered or pasted into the in-app editor; importing a `.md` file is not implemented.
+- The map illustrates the intended shared AI context; no LLM is connected yet.
 - Photos, Gmail, Calendar, Meet, and GitHub appear as visual examples only. They are not live integrations.
 - Ollama is an intended integration but has not been implemented in the current repository.
-- The core collaboration workspace and project-documentation workflow are not implemented yet.
 - Handling unusually large amounts of user data remains an open product and architecture concern.
 - No automated tests currently exist.
 
@@ -58,7 +62,7 @@ The project is configured to run on the web, iOS, and Android. The current verif
 ## Roadmap
 
 - Connect account creation and sign-in to a real authentication backend.
-- Build the main project workspace and documentation flow.
+- Persist project maps and connect a defined AI-assisted workflow.
 - Add project activity and accountability features.
 - Design safe limits and storage behavior for large projects.
 - Connect Ollama for a clearly defined AI-assisted workflow.

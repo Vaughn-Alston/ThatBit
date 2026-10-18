@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -160,6 +160,18 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]}>
                 <Text style={styles.submitLabel}>{isSignUp ? 'Create account' : 'Sign in'}</Text>
               </Pressable>
+
+              <View style={styles.demoSection}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/workspace')}
+                  style={({ pressed }) => [styles.demoButton, pressed && styles.pressed]}>
+                  <Text style={styles.demoLabel}>Continue in demo mode</Text>
+                </Pressable>
+                <Text style={styles.demoNote}>
+                  Skips authentication for testing. Nothing is sent to Supabase.
+                </Text>
+              </View>
 
               <View style={styles.switchRow}>
                 <Text style={styles.switchPrompt}>
@@ -363,6 +375,31 @@ const styles = StyleSheet.create({
     color: '#0a0b0c',
     fontSize: 14,
     fontWeight: '600',
+  },
+  demoSection: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: -12,
+  },
+  demoButton: {
+    minHeight: 46,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#34383e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoLabel: {
+    color: '#e0e3e6',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  demoNote: {
+    color: '#777b82',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
   },
   pressed: {
     opacity: 0.82,
