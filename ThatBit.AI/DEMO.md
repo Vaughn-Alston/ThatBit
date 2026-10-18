@@ -20,8 +20,8 @@ Student projects quickly become scattered across repositories, meetings, calenda
 2. Show the sign-in screen and explain that authentication is intentionally bypassed for this local prototype.
 3. Select **Continue in demo mode**; no credentials are required and no request is made to Supabase.
 4. Point out the central **Start / Design doc** node and explain that the map is empty until the user adds context.
-5. Select **Add a branch**, enter a Markdown heading and checklist, then choose **Parse & add to map**.
-6. Show how the document and its tasks appear as connected nodes in an irregular branch; select a task and mark it complete.
+5. Select **Add a branch**, enter a Markdown heading, a short first-paragraph description, and optional checklist items, then choose **Parse & add to map**.
+6. Show how the document and its tasks appear as connected nodes in an irregular branch. Select a node to see its name, description, creation date, and source Markdown; select a task and mark it complete.
 7. Explain that the map represents the shared context intended for an AI assistant, but the nodes are local-only and no LLM is connected.
 
 ## Demo risks and fallbacks
@@ -42,6 +42,7 @@ Student projects quickly become scattered across repositories, meetings, calenda
 | Navigation between authentication screens | Real, local Expo Router navigation |
 | Demo-mode authentication bypass | Real local navigation; no auth request or account |
 | Markdown-to-node parsing | Real local parsing of headings and checklist items |
+| Node details and creation date | Real local UI; metadata is not persisted |
 | Node graph and task completion | Real local UI; state is not persisted |
 | Supabase authentication | Not started |
 | Photos, Gmail, Calendar, Meet, and GitHub | Decorative product-direction examples; not connected |

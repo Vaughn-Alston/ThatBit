@@ -19,17 +19,22 @@ type NodeKind = 'start' | 'document' | 'task';
 type GraphNode = {
   id: string;
   title: string;
+  description: string;
+  createdAt: string;
+  source: string;
   kind: NodeKind;
   parentId: string | null;
   x: number;
   y: number;
-  content?: string;
   completed?: boolean;
 };
 
 const ROOT_NODE: GraphNode = {
   id: 'start',
   title: 'Start',
+  description: 'The root design document for your project.',
+  createdAt: new Date().toISOString(),
+  source: 'Created as the starting point for this project map.',
   kind: 'start',
   parentId: null,
   x: 0.5,
@@ -83,6 +88,7 @@ export function NodeWorkspaceScreen() {
   const [nodes, setNodes] = useState<GraphNode[]>([ROOT_NODE]);
   const [selectedNodeId, setSelectedNodeId] = useState(ROOT_NODE.id);
   const [isComposerVisible, setComposerVisible] = useState(false);
+  const [isDetailVisible, setDetailVisible] = useState(false);
   const [markdown, setMarkdown] = useState('');
   const [composerError, setComposerError] = useState('');
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? ROOT_NODE;
@@ -103,16 +109,19 @@ export function NodeWorkspaceScreen() {
     const parsedDocument = parseMarkdownDocument(markdown);
     const parent = nodes.find((node) => node.id === selectedNodeId) ?? ROOT_NODE;
     const documentId = `document-${Date.now()}`;
+    const createdAt = new Date().toISOString();
     const plannedNodeCount = nodes.length + parsedDocument.tasks.length + 1;
     const layoutHeight = Math.max(580, 440 + plannedNodeCount * 128);
     const nextNodes = [...nodes];
     const documentNode: GraphNode = {
       id: documentId,
       title: parsedDocument.title || 'Untitled document',
+      description: parsedDocument.description || 'No short description was included.',
+      createdAt,
+      source: parsedDocument.body,
       kind: 'document',
       parentId: parent.id,
       ...findPosition(parent, nextNodes, canvasWidth, layoutHeight, 'document'),
-      content: parsedDocument.body,
     };
     nextNodes.push(documentNode);
 
@@ -120,6 +129,9 @@ export function NodeWorkspaceScreen() {
       const taskNode: GraphNode = {
         id: `${documentId}-task-${index}`,
         title: task.title,
+        description: `Checklist task from ${documentNode.title}.`,
+        createdAt,
+        source: parsedDocument.body,
         kind: 'task',
         parentId: documentId,
         ...findPosition(documentNode, nextNodes, canvasWidth, layoutHeight, 'task'),
@@ -235,7 +247,10 @@ export function NodeWorkspaceScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`${node.kind === 'task' ? 'Task' : node.kind === 'document' ? 'Document' : 'Start design document'}: ${node.title}`}
                   accessibilityState={{ selected: isSelected }}
-                  onPress={() => setSelectedNodeId(node.id)}
+                  onPress={() => {
+                    setSelectedNodeId(node.id);
+                    setDetailVisible(true);
+                  }}
                   style={({ pressed }) => [
                     styles.node,
                     node.kind === 'start' ? styles.startNode : null,
@@ -276,11 +291,7 @@ export function NodeWorkspaceScreen() {
           <View style={styles.selectedSummary}>
             <Text numberOfLines={1} style={styles.selectedTitle}>{selectedNode.title}</Text>
             <Text numberOfLines={1} style={styles.selectedDescription}>
-              {selectedNode.kind === 'start'
-                ? 'The root design document for your project.'
-                : selectedNode.kind === 'task'
-                  ? selectedNode.completed ? 'Task complete' : 'Task · tap below to update'
-                  : selectedNode.content ?? 'Markdown document'}
+              {selectedNode.description}
             </Text>
           </View>
           {selectedNode.kind === 'task' ? (
@@ -329,7 +340,8 @@ export function NodeWorkspaceScreen() {
               </Pressable>
             </View>
             <Text style={styles.modalDescription}>
-              A heading creates a document node. Markdown checklist items become connected tasks.
+              A heading names the document, its first paragraph is the short description, and
+              checklist items become connected tasks. The full Markdown is kept as the source.
             </Text>
             <TextInput
               accessibilityLabel="Markdown document"
@@ -339,7 +351,7 @@ export function NodeWorkspaceScreen() {
                 setMarkdown(text);
                 setComposerError('');
               }}
-              placeholder={'# Design idea\n\nDescribe a source or idea.\n\n- [ ] First task'}
+              placeholder={'# Design idea\n\nA short description of this idea.\n\nMore project context...\n\n- [ ] First task'}
               placeholderTextColor="#636873"
               style={styles.markdownInput}
               textAlignVertical="top"
@@ -359,6 +371,56 @@ export function NodeWorkspaceScreen() {
             </Pressable>
           </SafeAreaView>
         </KeyboardAvoidingView>
+      </Modal>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setDetailVisible(false)}
+        transparent
+        visible={isDetailVisible}>
+        <View style={styles.detailBackdrop}>
+          <View style={styles.detailCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.detailHeading}>
+                <Text style={styles.modalEyebrow}>NODE DETAILS</Text>
+                <Text numberOfLines={2} style={styles.modalTitle}>{selectedNode.title}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close node details"
+                onPress={() => setDetailVisible(false)}
+                style={styles.closeButton}>
+                <Text style={styles.closeLabel}>×</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.detailContent}
+              showsVerticalScrollIndicator={false}
+              style={styles.detailScroll}>
+              <Text style={styles.detailKind}>
+                {selectedNode.kind === 'start' ? 'PROJECT ROOT' : selectedNode.kind.toUpperCase()}
+              </Text>
+              <Text style={styles.detailDescription}>{selectedNode.description}</Text>
+              <View style={styles.detailMetaRow}>
+                <Text style={styles.detailMetaLabel}>CREATED</Text>
+                <Text style={styles.detailMetaValue}>
+                  {new Date(selectedNode.createdAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+              </View>
+              {selectedNode.kind === 'task' ? (
+                <View style={styles.detailMetaRow}>
+                  <Text style={styles.detailMetaLabel}>STATUS</Text>
+                  <Text style={styles.detailMetaValue}>{selectedNode.completed ? 'Complete' : 'Open'}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.detailMetaLabel}>CREATION SOURCE</Text>
+              <Text selectable style={styles.detailSource}>{selectedNode.source}</Text>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -673,6 +735,72 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  detailBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  detailCard: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: '#272b30',
+    borderRadius: 22,
+    backgroundColor: '#0d0f11',
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 8,
+  },
+  detailHeading: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  detailScroll: {
+    marginTop: 18,
+  },
+  detailContent: {
+    paddingBottom: 14,
+  },
+  detailKind: {
+    color: '#89a9bd',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    marginBottom: 8,
+  },
+  detailDescription: {
+    color: '#c4c9ce',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  detailMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#22262a',
+    paddingVertical: 12,
+    marginBottom: 6,
+  },
+  detailMetaLabel: {
+    color: '#777f87',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+  detailMetaValue: {
+    color: '#c4c9ce',
+    fontSize: 11,
+  },
+  detailSource: {
+    color: '#a6abb2',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 8,
   },
   modalSheet: {
     width: '100%',

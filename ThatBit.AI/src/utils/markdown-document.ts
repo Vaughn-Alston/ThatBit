@@ -5,6 +5,7 @@ export type MarkdownTask = {
 
 export type ParsedMarkdownDocument = {
   title: string;
+  description: string;
   body: string;
   tasks: MarkdownTask[];
 };
@@ -25,6 +26,18 @@ export function parseMarkdownDocument(markdown: string): ParsedMarkdownDocument 
   const title = cleanMarkdownText(
     heading ?? firstContentLine?.replace(/^#{1,6}\s+/, '') ?? 'Untitled document'
   );
+  const description = markdown
+    .split(/\r?\n\s*\r?\n/)
+    .map((paragraph) =>
+      paragraph
+        .split(/\r?\n/)
+        .filter((line) => !/^\s{0,3}#{1,6}\s+/.test(line) && !/^\s*[-*+]\s+\[[ xX]\]\s+/.test(line))
+        .map(cleanMarkdownText)
+        .filter((line) => line && line !== title)
+        .join(' ')
+        .trim()
+    )
+    .find(Boolean) ?? '';
   const tasks: MarkdownTask[] = [];
   const taskPattern = /^\s*[-*+]\s+\[([ xX])\]\s+(.+?)\s*$/gm;
 
@@ -35,5 +48,5 @@ export function parseMarkdownDocument(markdown: string): ParsedMarkdownDocument 
     });
   }
 
-  return { title, body: markdown.trim(), tasks };
+  return { title, description, body: markdown.trim(), tasks };
 }

@@ -21,6 +21,7 @@ The current prototype includes:
 - A clearly labeled demo-mode bypass for testing without an account or Supabase.
 - A project context map rooted at a Start design-document node.
 - Markdown documents that create irregular document branches and connected checklist tasks.
+- Node detail modals with a name, short description, creation date, and the Markdown source used to create the node.
 - Local task completion and node selection for exploring the graph.
 
 ## Architecture
@@ -32,6 +33,7 @@ ThatBit is an Expo application built with React Native, TypeScript, and Expo Rou
 - `src/hooks/` contains reusable platform and theme hooks.
 - `src/constants/` contains shared theme values.
 - `assets/` contains icons and images used by the app.
+- [MVP-DESIGN.md](./MVP-DESIGN.md) records the node data model and detail-view behavior.
 
 The project is configured to run on the web, iOS, and Android. The demo workspace keeps its nodes in memory for the current session; no backend or AI service is connected.
 
@@ -45,6 +47,7 @@ The project is configured to run on the web, iOS, and Android. The demo workspac
 
 - Sign-in and account creation are interface-only; use **Continue in demo mode** to reach the workspace without Supabase.
 - Workspace nodes and task completion are local to the current session and are lost when the app reloads.
+- Node creation dates and Markdown source are shown in the detail view but are not persisted beyond the current session.
 - Markdown is entered or pasted into the in-app editor; importing a `.md` file is not implemented.
 - The map illustrates the intended shared AI context; no LLM is connected yet.
 - Photos, Gmail, Calendar, Meet, and GitHub appear as visual examples only. They are not live integrations.
