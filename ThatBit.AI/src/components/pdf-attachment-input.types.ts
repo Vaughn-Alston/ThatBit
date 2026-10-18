@@ -1,7 +1,7 @@
-import type { PickedPdf } from '@/utils/node-attachment';
+import type { PickedAttachment } from '@/utils/node-attachment';
 
-export type PdfAttachmentInputProps = {
+export type ProjectFileInputProps = {
   disabled?: boolean;
-  onFiles: (files: PickedPdf[]) => void;
+  onFiles: (files: PickedAttachment[]) => void;
   onError: (message: string) => void;
 };

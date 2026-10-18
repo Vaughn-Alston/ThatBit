@@ -19,11 +19,11 @@ Student projects quickly become scattered across repositories, meetings, calenda
 1. From the `ThatBit.AI` directory, run `npm run web` and open the local URL shown by Expo.
 2. Show the sign-in screen and explain that authentication is intentionally bypassed for this local prototype.
 3. Select **Continue in demo mode**; no credentials are required and no request is made to Supabase.
-4. Point out the central **Start / Design doc** node and explain that the map is empty until the user adds context.
+4. Point out the **Start** node and the onboarding panel above the map. Explain that users can begin with an image, a PDF, or a note.
 5. Select **Tasks** to view phases and tasks parsed from `docs/docs/design-doc.md`. Mark a task complete, then reload the document to reset its imported task state.
-6. Return to **Project map**, select **Add a branch**, enter a Markdown heading, short first-paragraph description, and optional checklist items, then choose **Parse & add to map**.
-7. Select a node to see its name, description, creation date, and source Markdown. Attach a PDF by dropping it into the detail modal on web or using the device picker, then open/share it.
-8. Explain that the map represents the shared context intended for an AI assistant, but the nodes are local-only and no LLM is connected.
+6. Return to **Project map**, choose **Write a note**, enter a Markdown heading, short first-paragraph description, and optional checklist items, then choose **Add to map**.
+7. Add an image or PDF from the panel above the map, then select a node to see its name, description, creation date, source Markdown, and attached files.
+8. Point out the chat box location above the map. Explain that it is a placeholder: no LLM is connected and files/nodes are local-only.
 
 ## Demo risks and fallbacks
 
@@ -33,8 +33,8 @@ Student projects quickly become scattered across repositories, meetings, calenda
 | Browser target fails to load | Local development environment | Use Expo Go on a prepared device or show current screenshots |
 | A judge expects authentication to create an account | The demo-mode path skips auth | State clearly that this bypass is only for testing; no account is created |
 | The graph is mistaken for a live AI integration | AI and persistence are not connected | Explain that the map demonstrates the intended context structure only |
-| A judge expects Markdown file upload | The composer accepts pasted or typed Markdown | Explain that file import is a future addition |
-| Local PDF reference expires or cannot be opened | Browser/device file access | Keep one small non-sensitive sample PDF ready and skip this step if the picker fails |
+| A judge expects Markdown file upload | The file picker currently accepts images and PDFs; Markdown notes use the composer | Explain that Markdown file import is a future addition |
+| A local file reference expires or cannot be opened | Browser/device file access | Keep one small non-sensitive sample image or PDF ready and skip this step if the picker fails |
 
 ## What is real vs. simulated
 
@@ -46,7 +46,8 @@ Student projects quickly become scattered across repositories, meetings, calenda
 | Markdown-to-node parsing | Real local parsing of headings and checklist items |
 | Design-document task section | Real local parsing of phase headings and task bullets |
 | Node details and creation date | Real local UI; metadata is not persisted |
-| PDF attachments | Real local picker and node list; files are not uploaded and local references may not survive reload |
+| Image and PDF attachments | Real local picker and node list; files are not uploaded and local references may not survive reload |
+| AI chat entry point | Visual placeholder only; no messages are sent because no LLM is connected |
 | Node graph and task completion | Real local UI; state is not persisted |
 | Supabase authentication | Not started |
 | Photos, Gmail, Calendar, Meet, and GitHub | Decorative product-direction examples; not connected |

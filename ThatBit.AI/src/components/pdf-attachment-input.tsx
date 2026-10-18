@@ -1,41 +1,45 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import type { PdfAttachmentInputProps } from '@/components/pdf-attachment-input.types';
-import type { PickedPdf } from '@/utils/node-attachment';
+import type { ProjectFileInputProps } from '@/components/pdf-attachment-input.types';
+import type { PickedAttachment } from '@/utils/node-attachment';
 
-export function PdfAttachmentInput({ disabled, onFiles, onError }: PdfAttachmentInputProps) {
+export function ProjectFileInput({ disabled, onFiles, onError }: ProjectFileInputProps) {
   const [isPicking, setPicking] = useState(false);
 
-  async function pickPdfs() {
+  async function pickFiles() {
     onError('');
     setPicking(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: ['application/pdf', 'image/*'],
         multiple: true,
         copyToCacheDirectory: true,
         base64: false,
       });
       if (result.canceled) return;
 
-      const pdfs = result.assets
-        .filter((asset) => asset.mimeType?.toLowerCase() === 'application/pdf' || /\.pdf$/i.test(asset.name))
-        .map((asset): PickedPdf => ({
+      const attachments = result.assets
+        .filter((asset) =>
+          asset.mimeType?.toLowerCase() === 'application/pdf'
+          || asset.mimeType?.toLowerCase().startsWith('image/')
+          || /\.(pdf|png|jpe?g|gif|webp|avif)$/i.test(asset.name)
+        )
+        .map((asset): PickedAttachment => ({
           name: asset.name,
           uri: asset.uri,
-          mimeType: 'application/pdf',
+          mimeType: asset.mimeType ?? (/\.(pdf)$/i.test(asset.name) ? 'application/pdf' : 'image/*'),
           size: asset.size,
         }));
 
-      if (pdfs.length === 0) {
-        onError('Choose a PDF file to attach to this node.');
+      if (attachments.length === 0) {
+        onError('Choose an image or PDF file to attach to this node.');
         return;
       }
 
-      onFiles(pdfs);
+      onFiles(attachments);
     } catch (error) {
-      onError(error instanceof Error ? `Could not attach PDF: ${error.message}` : 'Could not attach PDF.');
+      onError(error instanceof Error ? `Could not attach files: ${error.message}` : 'Could not attach files.');
     } finally {
       setPicking(false);
     }
@@ -45,9 +49,9 @@ export function PdfAttachmentInput({ disabled, onFiles, onError }: PdfAttachment
     <Pressable
       accessibilityRole="button"
       disabled={disabled || isPicking}
-      onPress={pickPdfs}
+      onPress={pickFiles}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-      <Text style={styles.label}>{isPicking ? 'Choosing…' : '+ Choose PDF'}</Text>
+      <Text style={styles.label}>{isPicking ? 'Choosing…' : '+ Add image or document'}</Text>
     </Pressable>
   );
 }

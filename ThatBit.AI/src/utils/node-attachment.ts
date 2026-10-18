@@ -6,4 +6,4 @@ export type NodeAttachment = {
   size?: number;
 };
 
-export type PickedPdf = Omit<NodeAttachment, 'id'>;
+export type PickedAttachment = Omit<NodeAttachment, 'id'>;

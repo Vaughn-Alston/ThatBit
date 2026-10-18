@@ -29,7 +29,7 @@ export function TaskSection({
           <Text style={styles.eyebrow}>TASK SECTION</Text>
           <Text style={styles.heading}>Project phases</Text>
           <Text style={styles.subheading}>
-            Tasks are grouped by phase from your design document.
+            Tasks are grouped by phase from your project plan.
           </Text>
         </View>
         <Pressable
@@ -64,7 +64,7 @@ export function TaskSection({
 
       {isLoading && !project ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Loading design document…</Text>
+          <Text style={styles.emptyTitle}>Loading project plan…</Text>
           <Text style={styles.emptyDescription}>Reading phases and tasks from the project Markdown.</Text>
         </View>
       ) : null}
@@ -72,7 +72,7 @@ export function TaskSection({
       {!isLoading && !project && !error ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No project document loaded</Text>
-          <Text style={styles.emptyDescription}>Reload the bundled design document to load its phases.</Text>
+          <Text style={styles.emptyDescription}>Reload the bundled project plan to load its phases.</Text>
         </View>
       ) : null}
 

@@ -14,11 +14,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PdfAttachmentInput } from '@/components/pdf-attachment-input';
+import { ProjectFileInput } from '@/components/pdf-attachment-input';
 import { TaskSection } from '@/components/task-section';
 import type { Project } from '@/types/project';
 import { parseMarkdownDocument } from '@/utils/markdown-document';
-import type { NodeAttachment, PickedPdf } from '@/utils/node-attachment';
+import type { NodeAttachment, PickedAttachment } from '@/utils/node-attachment';
 import { parseProject } from '@/utils/project-parser';
 import { readMarkdownAsset } from '@/utils/read-markdown-asset';
 import designDocumentAsset from '../../docs/docs/design-doc.md';
@@ -42,9 +42,9 @@ type GraphNode = {
 const ROOT_NODE: GraphNode = {
   id: 'start',
   title: 'Start',
-  description: 'The root design document for your project.',
+  description: 'The starting point for your project context.',
   createdAt: new Date().toISOString(),
-  source: 'Created as the starting point for this project map.',
+  source: 'Created as the starting point for this project.',
   kind: 'start',
   parentId: null,
   x: 0.5,
@@ -138,14 +138,14 @@ export function NodeWorkspaceScreen() {
         });
 
         if (project.phases.length === 0) {
-          throw new Error('No phases found. Add headings that start with “Phase ” to the design document.');
+          throw new Error('No phases found. Add headings that start with “Phase ” to the project plan.');
         }
 
         if (isCurrent) setProjects([project]);
       } catch (error) {
         if (isCurrent) {
           setDesignDocumentError(
-            error instanceof Error ? error.message : 'Could not load the design document.'
+            error instanceof Error ? error.message : 'Could not load the project plan.'
           );
         }
       } finally {
@@ -216,11 +216,11 @@ export function NodeWorkspaceScreen() {
     );
   }
 
-  function attachPdfs(pdfs: PickedPdf[]) {
+  function attachFiles(files: PickedAttachment[]) {
     setAttachmentError('');
     const timestamp = Date.now();
-    const attachments = pdfs.map((pdf, index): NodeAttachment => ({
-      ...pdf,
+    const attachments = files.map((file, index): NodeAttachment => ({
+      ...file,
       id: `${timestamp}-${index}`,
     }));
     setNodes((currentNodes) =>
@@ -241,7 +241,7 @@ export function NodeWorkspaceScreen() {
       }
 
       if (!(await Sharing.isAvailableAsync())) {
-        setAttachmentError('PDF sharing is not available on this device.');
+        setAttachmentError('File sharing is not available on this device.');
         return;
       }
 
@@ -251,7 +251,7 @@ export function NodeWorkspaceScreen() {
       });
     } catch (error) {
       setAttachmentError(
-        error instanceof Error ? `Could not open PDF: ${error.message}` : 'Could not open PDF.'
+        error instanceof Error ? `Could not open file: ${error.message}` : 'Could not open file.'
       );
     }
   }
@@ -319,7 +319,7 @@ export function NodeWorkspaceScreen() {
           <Text style={styles.eyebrow}>YOUR PROJECT, CONNECTED</Text>
           <Text style={styles.heading}>A map of your context.</Text>
           <Text style={styles.subheading}>
-            Add documents and tasks. Each branch builds a shared context for your AI.
+            Keep project materials, tasks, and decisions connected as your work grows.
           </Text>
         </View>
 
@@ -354,6 +354,51 @@ export function NodeWorkspaceScreen() {
           />
         ) : (
           <>
+        <View style={styles.startPanel}>
+          <View style={styles.startPanelHeading}>
+            <Text style={styles.startPanelTitle}>Start</Text>
+            <Text style={styles.startPanelDescription}>
+              Add an image or document to give your AI agent project context.
+            </Text>
+            <View style={styles.startActions}>
+              <ProjectFileInput onError={setAttachmentError} onFiles={attachFiles} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setComposerError('');
+                  setComposerVisible(true);
+                }}
+                style={({ pressed }) => [styles.writeNoteButton, pressed && styles.nodePressed]}>
+                <Text style={styles.writeNoteLabel}>Write a note</Text>
+              </Pressable>
+            </View>
+            {selectedNode.attachments.length > 0 ? (
+              <View style={styles.attachedFiles}>
+                <Text style={styles.attachedFilesLabel}>Attached to {selectedNode.title}</Text>
+                <View style={styles.attachedFileList}>
+                  {selectedNode.attachments.map((attachment) => (
+                    <Text key={attachment.id} numberOfLines={1} style={styles.attachedFileName}>
+                      {attachment.name}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            {attachmentError ? (
+              <Text accessibilityRole="alert" style={styles.errorText}>{attachmentError}</Text>
+            ) : null}
+          </View>
+          <View style={styles.chatPlaceholder}>
+            <TextInput
+              accessibilityLabel="AI agent chat, coming soon"
+              editable={false}
+              placeholder="Ask your project agent…"
+              placeholderTextColor="#626a72"
+              style={styles.chatInput}
+            />
+            <Text style={styles.chatComingSoon}>COMING SOON</Text>
+          </View>
+        </View>
         <View style={styles.mapToolbar}>
           <View>
             <Text style={styles.mapLabel}>PROJECT MAP</Text>
@@ -363,7 +408,7 @@ export function NodeWorkspaceScreen() {
           </View>
           <View style={styles.selectionPill}>
             <Text numberOfLines={1} style={styles.selectionText}>
-              Branching from {selectedNode.title}
+              Context for {selectedNode.title}
             </Text>
           </View>
         </View>
@@ -378,7 +423,7 @@ export function NodeWorkspaceScreen() {
           style={styles.graphViewport}>
           {nodes.length === 1 ? (
             <View pointerEvents="none" style={styles.emptyHint}>
-              <Text style={styles.emptyHintText}>Your branches appear here as you add them.</Text>
+              <Text style={styles.emptyHintText}>Your project map will grow as you add context.</Text>
             </View>
           ) : null}
           <ScrollView
@@ -417,7 +462,7 @@ export function NodeWorkspaceScreen() {
                 <Pressable
                   key={node.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${node.kind === 'task' ? 'Task' : node.kind === 'document' ? 'Document' : 'Start design document'}: ${node.title}`}
+                  accessibilityLabel={`${node.kind === 'task' ? 'Task' : node.kind === 'document' ? 'Document' : 'Start'}: ${node.title}`}
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => {
                     setSelectedNodeId(node.id);
@@ -438,7 +483,7 @@ export function NodeWorkspaceScreen() {
                         <Text style={styles.startGlyphText}>✳</Text>
                       </View>
                       <Text style={styles.startTitle}>{node.title}</Text>
-                      <Text style={styles.nodeCaption}>DESIGN DOC</Text>
+                      <Text style={styles.nodeCaption}>PROJECT</Text>
                     </>
                   ) : node.kind === 'document' ? (
                     <>
@@ -482,7 +527,7 @@ export function NodeWorkspaceScreen() {
               }}
               style={({ pressed }) => [styles.addButton, pressed && styles.nodePressed]}>
               <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonLabel}>Add a branch</Text>
+              <Text style={styles.addButtonLabel}>Add context</Text>
             </Pressable>
           )}
         </View>
@@ -502,7 +547,7 @@ export function NodeWorkspaceScreen() {
           <SafeAreaView style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalEyebrow}>NEW BRANCH · MARKDOWN</Text>
+                <Text style={styles.modalEyebrow}>NEW BRANCH · NOTE</Text>
                 <Text style={styles.modalTitle}>Add project context</Text>
               </View>
               <Pressable
@@ -514,8 +559,8 @@ export function NodeWorkspaceScreen() {
               </Pressable>
             </View>
             <Text style={styles.modalDescription}>
-              A heading names the document, its first paragraph is the short description, and
-              checklist items become connected tasks. The full Markdown is kept as the source.
+              A heading names the context, its first paragraph is the summary, and checklist
+              items become connected tasks. Your note stays attached to its branch.
             </Text>
             <TextInput
               accessibilityLabel="Markdown document"
@@ -525,7 +570,7 @@ export function NodeWorkspaceScreen() {
                 setMarkdown(text);
                 setComposerError('');
               }}
-              placeholder={'# Design idea\n\nA short description of this idea.\n\nMore project context...\n\n- [ ] First task'}
+              placeholder={'# Project idea\n\nA short description of this idea.\n\nMore project context...\n\n- [ ] First task'}
               placeholderTextColor="#636873"
               style={styles.markdownInput}
               textAlignVertical="top"
@@ -541,7 +586,7 @@ export function NodeWorkspaceScreen() {
               accessibilityRole="button"
               onPress={addMarkdownBranch}
               style={({ pressed }) => [styles.createButton, pressed && styles.nodePressed]}>
-              <Text style={styles.createButtonLabel}>Parse & add to map</Text>
+              <Text style={styles.createButtonLabel}>Add to map</Text>
             </Pressable>
           </SafeAreaView>
         </KeyboardAvoidingView>
@@ -594,14 +639,14 @@ export function NodeWorkspaceScreen() {
               <Text selectable style={styles.detailSource}>{selectedNode.source}</Text>
               <View style={styles.attachmentSection}>
                 <View style={styles.attachmentHeader}>
-                  <Text style={styles.detailMetaLabel}>PDF ATTACHMENTS</Text>
-                  <PdfAttachmentInput
+                  <Text style={styles.detailMetaLabel}>PROJECT FILES</Text>
+                  <ProjectFileInput
                     onError={setAttachmentError}
-                    onFiles={attachPdfs}
+                    onFiles={attachFiles}
                   />
                 </View>
                 {selectedNode.attachments.length === 0 ? (
-                  <Text style={styles.noAttachments}>No PDFs attached yet.</Text>
+                  <Text style={styles.noAttachments}>No files attached yet.</Text>
                 ) : (
                   selectedNode.attachments.map((attachment) => (
                     <View key={attachment.id} style={styles.attachmentRow}>
@@ -611,7 +656,9 @@ export function NodeWorkspaceScreen() {
                         onPress={() => openAttachment(attachment)}
                         style={({ pressed }) => [styles.attachmentInfo, pressed && styles.nodePressed]}>
                         <View style={styles.pdfBadge}>
-                          <Text style={styles.pdfBadgeLabel}>PDF</Text>
+                          <Text style={styles.pdfBadgeLabel}>
+                            {attachment.mimeType.startsWith('image/') ? 'IMG' : 'PDF'}
+                          </Text>
                         </View>
                         <View style={styles.attachmentText}>
                           <Text numberOfLines={1} style={styles.attachmentName}>{attachment.name}</Text>
@@ -629,8 +676,8 @@ export function NodeWorkspaceScreen() {
                   ))
                 )}
                 <Text style={styles.attachmentNote}>
-                  Drop PDFs here on web, or choose them from your device. Attachments are temporary and may
-                  need to be added again after reload.
+                  Add images or PDFs to give this branch project context. Files are temporary in this demo
+                  and may need to be added again after reload.
                 </Text>
                 {attachmentError ? (
                   <Text accessibilityRole="alert" style={styles.errorText}>{attachmentError}</Text>
@@ -764,6 +811,97 @@ const styles = StyleSheet.create({
   },
   sectionTabLabelSelected: {
     color: '#d9e0e5',
+  },
+  startPanel: {
+    borderWidth: 1,
+    borderColor: '#20262a',
+    borderRadius: 16,
+    backgroundColor: '#0b0e10',
+    padding: 11,
+    marginBottom: 8,
+  },
+  startPanelHeading: {
+    alignItems: 'flex-start',
+  },
+  startPanelTitle: {
+    color: '#e6e9eb',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  startPanelDescription: {
+    color: '#858c94',
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  startActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+  },
+  writeNoteButton: {
+    minHeight: 32,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#343b41',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+  },
+  writeNoteLabel: {
+    color: '#c4cbd0',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  attachedFiles: {
+    marginTop: 9,
+  },
+  attachedFilesLabel: {
+    color: '#8f9da6',
+    fontSize: 9,
+    marginBottom: 5,
+  },
+  attachedFileList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  attachedFileName: {
+    maxWidth: '100%',
+    overflow: 'hidden',
+    color: '#bed0dc',
+    fontSize: 9,
+    borderWidth: 1,
+    borderColor: '#29343b',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  chatPlaceholder: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#24292d',
+    borderRadius: 12,
+    backgroundColor: '#080a0b',
+    paddingHorizontal: 10,
+    marginTop: 7,
+  },
+  chatInput: {
+    flex: 1,
+    minWidth: 0,
+    color: '#aeb5bb',
+    fontSize: 11,
+    paddingVertical: 8,
+  },
+  chatComingSoon: {
+    color: '#777f87',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.7,
   },
   mapToolbar: {
     minHeight: 52,
